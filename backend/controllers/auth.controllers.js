@@ -81,7 +81,7 @@ const login = async (req, res) => {
             setCookies(res, accessToken, refreshToken);
         }
         else {
-            return res.status(400).json({ message: 'login unsuccessful' });
+            return res.status(400).json({ message: 'Log in unsuccessful' });
         }
 
         res.status(200).json({
@@ -117,8 +117,42 @@ const logout = async (req, res) => {
     }
 }
 
+const refreshAccessToken = async (req, res) => {
+    try {
+        const refreshToken = req.cookies.refreshToken;
+    
+        if(!refreshToken) {
+            return res.status(401).json({message: 'Refresh token not found'});
+        }
+    
+        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        const storedToken = await redis.get(`refresh_token:${decoded.userId}`);
+    
+        if(storedToken !== refreshToken) {
+            return res.status(401).json('Invalid refresh token');
+        }
+    
+        const accessToken = jwt.sign({userId: decoded.userId }, process.env.ACCESS_TOKEN_SECRET, {
+            expiresIn: '15m'
+        })
+    
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 15 * 60 * 1000
+        })
+        
+        res.status(201).json({message: 'Access token created'});
+    } 
+    catch (error) {
+        res.status(500).json({message: error.message});
+    }
+}
+
 export default {
     signup,
     login,
-    logout
+    logout,
+    refreshAccessToken
 }
