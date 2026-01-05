@@ -34,7 +34,7 @@ const setCookies = (res, accessToken, refreshToken) => {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         maxAge: 7 * 24 * 60 * 60 * 1000
-    })
+    }) 
 }
 
 const signup = async (req, res) => {
@@ -56,13 +56,10 @@ const signup = async (req, res) => {
         setCookies(res, accessToken, refreshToken);
     
         res.status(201).json({
-            user: {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
                 role: user.role
-            },
-            message: "User created successfully"
         });
     } 
     catch (error) {
@@ -71,8 +68,32 @@ const signup = async (req, res) => {
 }
 
 
-const login = (req, res) => {
-    res.send('Login route called');
+const login = async (req, res) => {
+    try {
+        const {email, password} = req.body;
+        const user = await User.findOne({email});
+
+        const isMatch = await user.comparePasswords(password);
+
+        if(user && isMatch){
+            const {accessToken, refreshToken} = generateTokens(user._id);
+            await storeRefreshToken(user._id, refreshToken);
+            setCookies(res, accessToken, refreshToken);
+        }
+        else {
+            return res.status(400).json({ message: 'login unsuccessful' });
+        }
+
+        res.status(200).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+        })
+    } 
+    catch (error) {
+        res.status(500).json({message: error.message});
+    }
 }
 
 const logout = async (req, res) => {
