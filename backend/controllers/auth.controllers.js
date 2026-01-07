@@ -1,9 +1,6 @@
 import User from '../models/user.model.js';
 import {redis} from '../lib/redis.js';
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 const generateTokens = (userId) => {
     const accessToken = jwt.sign({userId}, process.env.ACCESS_TOKEN_SECRET, {
@@ -14,7 +11,7 @@ const generateTokens = (userId) => {
         expiresIn: '7d'
     })
 
-    return {accessToken, refreshToken};
+    return {accessToken, refreshToken}; 
 }
 
 const storeRefreshToken = async (userId, refreshToken) => {
@@ -66,7 +63,6 @@ const signup = async (req, res) => {
         res.status(404).json({message: error.message});
     }
 }
-
 
 const login = async (req, res) => {
     try {
